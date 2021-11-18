@@ -4,6 +4,7 @@
 ## example of file in this directory: "3906_P1R1_RefSeq/paired_sams/Scun_23_liver_S41_paired_RefSeq.sam"
 
 PrimDir="/scratch/dtn2an/refseq_aligned"
+refgen="/scratch/dtn2an/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
 
 mkdir ${PrimDir}/preprocessing/liver
 cd /${PrimDir}/3906_P1R1_RefSeq/paired_sams/
@@ -70,7 +71,7 @@ do
 done
 
 
-## The last pre-processing step is removing duplicates since the RNAseq dataset will have a lot of duplicates and downstream genotyping doesn't want the confusion of many slighly similar overlapping reads
+## Next step is removing duplicates since the RNAseq dataset will have a lot of duplicates and downstream genotyping doesn't want the confusion of many slighly similar overlapping reads
 
 cd ${PrimDir}/merged/
 
@@ -81,11 +82,20 @@ do
   name=$(echo $i | awk -F "_merged" '{print $1}')
   gatk MarkDuplicates \
   -I $i \
-  -O ${name}_marked_dups.bam
-  -M ${name}_duplicate_metrics.txt
-  --REMOVE_DUPLICATES
+  -O ${name}_marked_dups.bam \
+  -M ${name}_duplicate_metrics.txt \
+  --REMOVE_DUPLICATES \
   --READ_NAME_REGEX=null
 done
 
-## We are now ready for genotyping
+## Final step is accounting for Ns in cigar strings of split reads (spanning splicing events). 
 
+for i in *.bam
+do
+  name=$(echo $i | awk -F "_marked_dups.bam" '{print $1}')
+  gatk SplitNCigarReads \
+  -R ${refgen} \
+  -I $i \
+  -O ${name}_split_cigar.bam
+
+## Go to ScelUnd_SNP_Calling
