@@ -2,7 +2,7 @@
 
 ## First step is sorting and providing readgroups names for the samples since some of the samples are different tissue that came from the same individual and there are two plates carrying lanes for the same sample.
 ## example of file in this directory: "3906_P1R1_RefSeq/paired_sams/Scun_23_liver_S41_paired_RefSeq.sam"
-
+## make sure to index and prepare dictionary of reference genome
 
 mkdir /scratch/dtn2an/refseq_aligned/preprocessing
 
