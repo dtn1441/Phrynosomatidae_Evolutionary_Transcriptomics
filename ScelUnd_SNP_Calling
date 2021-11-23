@@ -1,4 +1,243 @@
-## We left off splitting strings to account reads not extending beyond splice sites in RNAseq data. We will next sort one last time and then use haplotypecaller
+## We left off splitting strings to account reads not extending beyond splice sites in RNAseq data. We will next use haplotypecaller to find potential variant sites by creating a vcf file from each sample compared with the reference genome.
+
+##Before beginning, copy all sorted samples to a liver, brain, and muscle specific directory within /scratch/dtn2an/refseq_aligned/snp_calling/
+mkdir /scratch/dtn2an/refseq_aligned/snp_calling/
+
+PrimDir="/scratch/dtn2an/refseq_aligned"
+SecDir="/scratch/dtn2an/refseq_aligned/snp_calling"
+refgen="/scratch/dtn2an/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
 
 
+cd ${SecDir}/liver
 
+mkdir ${SecDir}/liver/haplotypecaller_output/
+
+module load gatk/4.1.6.0
+
+for i in *_prehaplotypecaller_sort.bam
+do
+  name=$(echo $i | awk -F "_prehaplotypecaller_" '{print $1}')
+  gatk --java-options "-Xmx25g" HaplotypeCaller \
+    -R ${refgen} \
+    -I $i \
+    -O ${SecDir}/liver/haplotypecaller_output/${name}_rd1.vcf \
+    --standard-min-confidence-threshold-for-calling 30 \
+    --min-base-quality-score 25 \
+    -ERC GVCF
+done
+
+cd ${SecDir}/brain
+
+mkdir ${SecDir}/brain/haplotypecaller_output/
+
+module load gatk/4.1.6.0
+
+for i in *_prehaplotypecaller_sort.bam
+do
+  name=$(echo $i | awk -F "_prehaplotypecaller_" '{print $1}')
+  gatk --java-options "-Xmx25g" HaplotypeCaller \
+    -R ${refgen} \
+    -I $i \
+    -O ${SecDir}/brain/haplotypecaller_output/${name}_rd1.vcf \
+    --standard-min-confidence-threshold-for-calling 30 \
+    --min-base-quality-score 25 \
+    -ERC GVCF
+done
+
+cd ${SecDir}/muscle
+
+mkdir ${SecDir}/muscle/haplotypecaller_output/
+
+module load gatk/4.1.6.0
+
+for i in *_prehaplotypecaller_sort.bam
+do
+  name=$(echo $i | awk -F "_prehaplotypecaller_" '{print $1}')
+  gatk --java-options "-Xmx25g" HaplotypeCaller \
+    -R ${refgen} \
+    -I $i \
+    -O ${SecDir}/muscle/haplotypecaller_output/${name}_rd1.vcf \
+    --standard-min-confidence-threshold-for-calling 30 \
+    --min-base-quality-score 25 \
+    -ERC GVCF
+done
+
+
+## From this point on, we will be doing everything by scaffold rather than by sample, since it is joint calling. We only need the first ~9000 scaffolds since nearly all important genes will be there
+## We need to make an interval list with all of the scaffolds that are worth looking at
+
+cd ${PrimDir}
+
+grep ">" ${refgen} | head -9000 > interval_list_header_too_long.txt
+cat intervl_list_header_too_long.txt | awk -F " " '{print $1}' > interval_list_headers_w_carrot.txt
+cat interval_list_headers_w_carrot.txt | sed 's/^.//' > interval_list.txt
+
+## Now we can run GenomicsDBImport which will make a database of all of our reference called variants and the reference to aid in joint calling. We will then immediately joint call and then delete the genomics database since it takes up so many files
+
+interval_file="/scratch/dtn2an/refseq_aligned/interval_list.txt"
+myint=$(cat ${interval_file} | sed "${SLURM_ARRAY_TASK_ID}q;d")
+
+cd ${SecDir}/liver/haplotypecaller_output/
+module load gatk/4.1.6.0
+
+##liver
+gatk GenomicsDBImport --batch-size 7 \
+  --reader-threads 10 \
+  --variant Scun_101_rd1.vcf \
+  --variant Scun_105_rd1.vcf \
+  --variant Scun_109_rd1.vcf \
+  --variant Scun_113_rd1.vcf \
+  --variant Scun_117_rd1.vcf \
+  --variant Scun_121_rd1.vcf \
+  --variant Scun_125_rd1.vcf \
+  --variant Scun_129_rd1.vcf \
+  --variant Scun_12_rd1.vcf \
+  --variant Scun_133_rd1.vcf \
+  --variant Scun_137_rd1.vcf \
+  --variant Scun_141_rd1.vcf \
+  --variant Scun_145_rd1.vcf \
+  --variant Scun_151_rd1.vcf \
+  --variant Scun_154_rd1.vcf \
+  --variant Scun_157_rd1.vcf \
+  --variant Scun_160_rd1.vcf \
+  --variant Scun_163_rd1.vcf \
+  --variant Scun_166_rd1.vcf \
+  --variant Scun_169_rd1.vcf \
+  --variant Scun_172_rd1.vcf \
+  --variant Scun_175_rd1.vcf \
+  --variant Scun_178_rd1.vcf \
+  --variant Scun_181_rd1.vcf \
+  --variant Scun_184_rd1.vcf \
+  --variant Scun_18_rd1.vcf \
+  --variant Scun_23_rd1.vcf \
+  --variant Scun_28_rd1.vcf \
+  --variant Scun_33_rd1.vcf \
+  --variant Scun_38_rd1.vcf \
+  --variant Scun_43_rd1.vcf \
+  --variant Scun_48_rd1.vcf \
+  --variant Scun_54_rd1.vcf \
+  --variant Scun_60_rd1.vcf \
+  --variant Scun_66_rd1.vcf \
+  --variant Scun_72_rd1.vcf \
+  --variant Scun_78_rd1.vcf \
+  --genomicsdb-workspace-path ./${myint}_wd \
+  --intervals $myint
+  
+mkdir ${SecDir}/liver/Genotype_gVCFs
+
+gatk GenotypeGVCFs \
+  -R ${refgen} \
+  -V gendb://./${myint}_wd \
+  -O ${SecDir}/liver/Genotype_gVCFs/${myint}_jc_rd1.vcf
+
+rm -r ./${myint}_wd
+
+cd ${SecDir}/brain/haplotypecaller_output/
+module gatk/4.1.6.0
+
+##brain
+gatk GenomicsDBImport --batch-size 7 \
+  --reader-threads 10 \
+  --variant Scun_102_rd1.vcf \
+  --variant Scun_106_rd1.vcf \
+  --variant Scun_110_rd1.vcf \
+  --variant Scun_114_rd1.vcf \
+  --variant Scun_118_rd1.vcf \
+  --variant Scun_122_rd1.vcf \
+  --variant Scun_126_rd1.vcf \
+  --variant Scun_130_rd1.vcf \
+  --variant Scun_134_rd1.vcf \
+  --variant Scun_138_rd1.vcf \
+  --variant Scun_142_rd1.vcf \
+  --variant Scun_146_rd1.vcf \
+  --variant Scun_14_rd1.vcf \
+  --variant Scun_152_rd1.vcf \
+  --variant Scun_155_rd1.vcf \
+  --variant Scun_158_rd1.vcf \
+  --variant Scun_161_rd1.vcf \
+  --variant Scun_164_rd1.vcf \
+  --variant Scun_167_rd1.vcf \
+  --variant Scun_170_rd1.vcf \
+  --variant Scun_173_rd1.vcf \
+  --variant Scun_176_rd1.vcf \
+  --variant Scun_179_rd1.vcf \
+  --variant Scun_182_rd1.vcf \
+  --variant Scun_185_rd1.vcf \
+  --variant Scun_20_rd1.vcf \
+  --variant Scun_25_rd1.vcf \
+  --variant Scun_30_rd1.vcf \
+  --variant Scun_35_rd1.vcf \
+  --variant Scun_40_rd1.vcf \
+  --variant Scun_45_rd1.vcf \
+  --variant Scun_50_rd1.vcf \
+  --variant Scun_56_rd1.vcf \
+  --variant Scun_62_rd1.vcf \
+  --variant Scun_68_rd1.vcf \
+  --variant Scun_74_rd1.vcf \
+  --variant Scun_80_rd1.vcf \
+  --genomicsdb-workspace-path ./${myint}_wd \
+  --intervals $myint
+  
+mkdir ${SecDir}/brain/Genotype_gVCFs
+
+gatk GenotypeGVCFs \
+  -R ${refgen} \
+  -V gendb://./${myint}_wd \
+  -O ${SecDir}/brain/Genotype_gVCFs/${myint}_jc_rd1.vcf
+
+rm -r ./${myint}_wd
+
+cd ${SecDir}/muscle/haplotypecaller_output/
+module load gatk/4.6.1.0
+
+##muscle
+gatk GenomicsDBImport --batch-size 7 \
+  --reader-threads 10 \
+  --variant Scun_104_rd1.vcf \
+  --variant Scun_108_rd1.vcf \
+  --variant Scun_112_rd1.vcf \
+  --variant Scun_116_rd1.vcf \
+  --variant Scun_120_rd1.vcf \
+  --variant Scun_124_rd1.vcf \
+  --variant Scun_128_rd1.vcf \
+  --variant Scun_132_rd1.vcf \
+  --variant Scun_136_rd1.vcf \
+  --variant Scun_140_rd1.vcf \
+  --variant Scun_144_rd1.vcf \
+  --variant Scun_148_rd1.vcf \
+  --variant Scun_153_rd1.vcf \
+  --variant Scun_156_rd1.vcf \
+  --variant Scun_159_rd1.vcf \
+  --variant Scun_162_rd1.vcf \
+  --variant Scun_165_rd1.vcf \
+  --variant Scun_168_rd1.vcf \
+  --variant Scun_16_rd1.vcf \
+  --variant Scun_171_rd1.vcf \
+  --variant Scun_174_rd1.vcf \
+  --variant Scun_177_rd1.vcf \
+  --variant Scun_180_rd1.vcf \
+  --variant Scun_183_rd1.vcf \
+  --variant Scun_186_rd1.vcf \
+  --variant Scun_22_rd1.vcf \
+  --variant Scun_27_rd1.vcf \
+  --variant Scun_32_rd1.vcf \
+  --variant Scun_37_rd1.vcf \
+  --variant Scun_42_rd1.vcf \
+  --variant Scun_47_rd1.vcf \
+  --variant Scun_52_rd1.vcf \
+  --variant Scun_58_rd1.vcf \
+  --variant Scun_64_rd1.vcf \
+  --variant Scun_70_rd1.vcf \
+  --variant Scun_76_rd1.vcf \
+  --variant Scun_82_rd1.vcf \
+  --genomicsdb-workspace-path ./${myint}_wd \
+  --intervals $myint
+  
+mkdir ${SecDir}/muscle/Genotype_gVCFs
+
+gatk GenotypeGVCFs \
+  -R ${refgen} \
+  -V gendb://./${myint}_wd \
+  -O ${SecDir}/muscle/Genotype_gVCFs/${myint}_jc_rd1.vcf
+
+rm -r ./${myint}_wd
