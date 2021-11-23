@@ -3,11 +3,15 @@
 ## First step is sorting and providing readgroups names for the samples since some of the samples are different tissue that came from the same individual and there are two plates carrying lanes for the same sample.
 ## example of file in this directory: "3906_P1R1_RefSeq/paired_sams/Scun_23_liver_S41_paired_RefSeq.sam"
 
+
+mkdir /scratch/dtn2an/refseq_aligned/preprocessing
+
 PrimDir="/scratch/dtn2an/refseq_aligned"
+SecDir="/scratch/dtn2an/refseq_aligned/preprocessing"
 refgen="/scratch/dtn2an/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
 
-mkdir ${PrimDir}/preprocessing/liver
-cd /${PrimDir}/3906_P1R1_RefSeq/paired_sams/
+
+cd ${PrimDir}/3906_P1R1_RefSeq/paired_sams/
 
 module load samtools/1.12
 
@@ -19,8 +23,8 @@ done
 
 for i in *.bam
 do
-  name=$(echo $j | awk -F "_liver" '{print $1}'
-  samtools sort $i > ${name}_liver_sorted.bam 
+  name=$(echo $j | awk -F . '{print $1}'
+  samtools sort $i > ${name}_sorted.bam 
 done
 
 ## Do the same thing in the second plate of resequenced animals. We will later need to merge these
@@ -37,8 +41,8 @@ done
 
 for i in *.bam
 do
-  name=$(echo $j | awk -F "_liver" '{print $1}'
-  samtools sort $i > ${name}_liver_sorted.bam 
+  name=$(echo $j | awk -F . '{print $1}'
+  samtools sort $i > ${name}_sorted.bam 
 done
 
 
@@ -49,8 +53,8 @@ done
 module load gatk/4.1.6.0
 
 gatk AddOrReplaceReadGroups \
--I Scun_78_liver_sorted.bam \
--O Scun_78_liver_rdgrps.bam \
+-I Scun_78_sorted.bam \
+-O Scun_78_rdgrps.bam \
 --RGID Scun_78 \
 --RGLB Scun_78_P1R1 \
 --RGPL ILLUMINA \
@@ -60,20 +64,84 @@ gatk AddOrReplaceReadGroups \
 
 ## Next we need to merge the plates that carry different runs from the same sample
 
-mkdir ${PrimDir}/merged/
+mkdir ${SecDir}/merged/
 
 cd ${PrimDir}/3906_P1R1_RefSeq/paired_sams/
 
 for i in *_rdgrps.bam
 do
-  name=$(echo $i | awk -F "_liver_rdgrps.bam" '{print $1}')
-  samtools merge -o ${PrimDir}/${name}_merged.bam $i ${PrimDir}/3906_P1R2_RefSeq/paired_sams/$i
+  name=$(echo $i | awk -F "_rdgrps.bam" '{print $1}')
+  samtools merge -o ${SecDir}/merged/${name}_merged.bam $i ${PrimDir}/3906_P1R2_RefSeq/paired_sams/$i
+done
+
+### Now do the same for Plate 2 which has the brain and muscle samples ###
+
+cd ${PrimDir}/3906_P2R1_RefSeq/paired_sams/
+
+module load samtools/1.12
+
+for i in *.sam
+do
+  name=$(echo $1 | awk -F . '{print $1}')
+  samtools view -bS $i > ${name}.bam
+done
+
+for i in *.bam
+do
+  name=$(echo $j | awk -F . '{print $1}'
+  samtools sort $i > ${name}_sorted.bam 
+done
+
+## Do the same thing in the second plate of resequenced animals. We will later need to merge these
+
+cd ${PrimDir}/3906_P2R2_RefSeq/paired_sams/
+
+module load samtools/1.12
+
+for i in *.sam
+do
+  name=$(echo $1 | awk -F . '{print $1}')
+  samtools view -bS $i > ${name}.bam
+done
+
+for i in *.bam
+do
+  name=$(echo $j | awk -F . '{print $1}'
+  samtools sort $i > ${name}_sorted.bam 
+done
+
+
+## Provide ReadGroups that indicate the library(sample), the organism, and the plate that it came from
+## For example RGID: Scun_78 | RGLB: Scun_78_P2R1 | RGPL: ILLUMINA | RGSM: SuAM15-CM
+## This will largely have to be done sample by sample for now using the ID datasheet from Henry John Alder. This can be automated easily by creating datasheets to pull the info from, but for now here is some dummy code until I actually do the work
+
+module load gatk/4.1.6.0
+
+gatk AddOrReplaceReadGroups \
+-I Scun_78_sorted.bam \
+-O Scun_78_rdgrps.bam \
+--RGID Scun_78 \
+--RGLB Scun_78_P2R1 \
+--RGPL ILLUMINA \
+--RGPU null \
+--RGSM SuAM15-CM
+
+
+## Next we need to merge the plates that carry different runs from the same sample
+
+
+cd ${PrimDir}/3906_P2R1_RefSeq/paired_sams/
+
+for i in *_rdgrps.bam
+do
+  name=$(echo $i | awk -F "_rdgrps.bam" '{print $1}')
+  samtools merge -o ${SecDir}/merged/${name}_merged.bam $i ${PrimDir}/3906_P2R2_RefSeq/paired_sams/$i
 done
 
 
 ## Next step is removing duplicates since the RNAseq dataset will have a lot of duplicates and downstream genotyping doesn't want the confusion of many slighly similar overlapping reads
 
-cd ${PrimDir}/merged/
+cd ${SecDir}/merged/
 
 module load gatk/4.1.6.0
 
