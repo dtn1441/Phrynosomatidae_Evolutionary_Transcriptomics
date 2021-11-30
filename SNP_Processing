@@ -1,0 +1,53 @@
+
+
+##Separate snps and indels
+
+cd ${SecDir}/liver/Genotype_gVCFs/
+
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type SNP \
+  -O ${myint}_snps.vcf 
+  
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type INDEL \
+  -O ${myint}_indels.vcf 
+
+rm *_jc_rd1.vcf
+
+cd ${SecDir}/brain/Genotype_gVCFs/
+
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type SNP \
+  -O ${myint}_snps.vcf 
+  
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type INDEL \
+  -O ${myint}_indels.vcf 
+
+rm *_jc_rd1.vcf
+
+cd ${SecDir}/muscle/Genotype_gVCFs/
+
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type SNP \
+  -O ${myint}_snps.vcf 
+  
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type INDEL \
+  -O ${myint}_indels.vcf 
+
+rm *_jc_rd1.vcf
+
+mkdir ${SecDir}/liver/filtered_variants/
+cd ${SecDir}/liver/filtered_variants/
+
+gatk VariantFiltration \
+  -R ${refgen} \
+  -V ${myint}_snps.vcf \
+  -O ${myint}_snps_filtered.fcf
