@@ -69,7 +69,7 @@ done
 cd ${PrimDir}
 
 grep ">" ${refgen} | head -9000 > interval_list_header_too_long.txt
-cat intervl_list_header_too_long.txt | awk -F " " '{print $1}' > interval_list_headers_w_carrot.txt
+cat interval_list_header_too_long.txt | awk -F " " '{print $1}' > interval_list_headers_w_carrot.txt
 cat interval_list_headers_w_carrot.txt | sed 's/^.//' > interval_list.txt
 
 ## Now we can run GenomicsDBImport which will make a database of all of our reference called variants and the reference to aid in joint calling. We will then immediately joint call and then delete the genomics database since it takes up so many files
