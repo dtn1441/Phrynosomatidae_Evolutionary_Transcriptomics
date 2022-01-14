@@ -133,7 +133,7 @@ gatk GenotypeGVCFs \
 rm -r ./${myint}_wd
 
 cd ${SecDir}/brain/haplotypecaller_output/
-module gatk/4.1.6.0
+module load gatk/4.1.6.0
 
 ##brain
 gatk GenomicsDBImport --batch-size 7 \
