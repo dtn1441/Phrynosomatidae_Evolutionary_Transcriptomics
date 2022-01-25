@@ -67,12 +67,8 @@ gatk VariantFiltration \
   -R ${refgen} \
   -V ../${myint}_liver_snps.vcf \
   -O ${myint}_liver_snps_marked.vcf \
-  --filter-expression "DP < 10.0" --filter-name "DP10" \
-  --filter-expression "FS > 30.0" --filter-name "FS30" \
-  --filter-expression "QUAL < 30.0" --filter-name "QUAL30" \
-  --filter-expression "MQ < 30.0" --filter-name "MQ30" \
-  --filter-expression "QD < 2.0" --filter-name "QD2" 
-
+  --filter-expression "DP > 10.0 && FS < 30.0 && QUAL > 30.0 && MQ > 30.0 && QD > 2.0" --filter-name "DP10.FS30.QUAL30.MQ30.QD2"
+  
 gatk SelectVariants \
   -R ${refgen} \
   -V ${myint}_liver_snps_marked.vcf \
@@ -83,11 +79,8 @@ gatk VariantFiltration \
   -R ${refgen} \
   -V ../${myint}_liver_indels.vcf \
   -O ${myint}_liver_indels_marked.vcf \
-  --filter-expression "FS > 200.0" --filter-name "FS200" \
-  --filter-expression "QUAL < 30.0" --filter-name "QUAL30" \
-  --filter-expression "ReadPosRankSum < -20.0" --filter-name "RPRS-20" \
-  --filter-expression "QD < 2.0" --filter-name "QD2"
-
+  --filter-expression "FS < 200.0 && QUAL > 30.0 && ReadPosRankSum > -20.0 && QD > 2.0" --filter-name "FS200.QUAL30.RPRS-20.QD2"
+  
 gatk SelectVariants \
   -R ${refgen} \
   -V ${myint}_liver_indels_marked.vcf \
@@ -102,12 +95,8 @@ gatk VariantFiltration \
   -R ${refgen} \
   -V ../${myint}_brain_snps.vcf \
   -O ${myint}_brain_snps_marked.vcf \
-  --filter-expression "DP < 10.0" --filter-name "DP10" \
-  --filter-expression "FS > 30.0" --filter-name "FS30" \
-  --filter-expression "QUAL < 30.0" --filter-name "QUAL30" \
-  --filter-expression "MQ < 30.0" --filter-name "MQ30" \
-  --filter-expression "QD < 2.0" --filter-name "QD2" 
- 
+  --filter-expression "DP > 10.0 && FS < 30.0 && QUAL > 30.0 && MQ > 30.0 && QD > 2.0" --filter-name "DP10.FS30.QUAL30.MQ30.QD2"
+  
  gatk SelectVariants \
   -R ${refgen} \
   -V ${myint}_brain_snps_marked.vcf \
@@ -118,11 +107,8 @@ gatk VariantFiltration \
   -R ${refgen} \
   -V ../${myint}_brain_indels.vcf \
   -O ${myint}_brain_indels_marked.vcf \
-  --filter-expression "FS > 200.0" --filter-name "FS200" \
-  --filter-expression "QUAL < 30.0" --filter-name "QUAL30" \
-  --filter-expression "ReadPosRankSum < -20.0" --filter-name "RPRS-20" \
-  --filter-expression "QD < 2.0" --filter-name "QD2"
-
+  --filter-expression "FS < 200.0 && QUAL > 30.0 && ReadPosRankSum > -20.0 && QD > 2.0" --filter-name "FS200.QUAL30.RPRS-20.QD2"
+  
 gatk SelectVariants \
   -R ${refgen} \
   -V ${myint}_brain_indels_marked.vcf \
@@ -137,11 +123,7 @@ gatk VariantFiltration \
   -R ${refgen} \
   -V ../${myint}_muscle_snps.vcf \
   -O ${myint}_muscle_snps_marked.vcf \
-  --filter-expression "DP < 10.0" --filter-name "DP10" \
-  --filter-expression "FS > 30.0" --filter-name "FS30" \
-  --filter-expression "QUAL < 30.0" --filter-name "QUAL30" \
-  --filter-expression "MQ < 30.0" --filter-name "MQ30" \
-  --filter-expression "QD < 2.0" --filter-name "QD2" 
+  --filter-expression "DP > 10.0 && FS < 30.0 && QUAL > 30.0 && MQ > 30.0 && QD > 2.0" --filter-name "DP10.FS30.QUAL30.MQ30.QD2"
   
  gatk SelectVariants \
   -R ${refgen} \
@@ -153,11 +135,8 @@ gatk VariantFiltration \
   -R ${refgen} \
   -V ../${myint}_muscle_indels.vcf \
   -O ${myint)_muscle_indels_marked.vcf \
-  --filter-expression "FS > 200.0" --filter-name "FS200" \
-  --filter-expression "QUAL < 30.0" --filter-name "QUAL30" \
-  --filter-expression "ReadPosRankSum < -20.0" --filter-name "RPRS-20" \
-  --filter-expression "QD < 2.0" --filter-name "QD2"
-
+  --filter-expression "FS < 200.0 && QUAL > 30.0 && ReadPosRankSum, > -20.0 && QD > 2.0" --filter-name "FS200.QUAL30.RPRS-20.QD2" 
+  
 gatk SelectVariants \
   -R ${refgen} \
   -V ${myint}_muscle_indels_marked.vcf \
