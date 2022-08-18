@@ -1,67 +1,65 @@
 ## We left off splitting strings to account reads not extending beyond splice sites in RNAseq data. We will next use haplotypecaller to find potential variant sites by creating a vcf file from each sample compared with the reference genome.
 
-##Before beginning, copy all sorted samples to a liver, brain, and muscle specific directory within /scratch/dtn2an/refseq_aligned/snp_calling/
 mkdir /scratch/dtn2an/refseq_aligned/snp_calling/
 
-PrimDir="/scratch/dtn2an/refseq_aligned"
-SecDir="/scratch/dtn2an/refseq_aligned/snp_calling"
-refgen="/scratch/dtn2an/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
+PrimDir="/scratch/dtn2an/workspace/refseq_aligned"
+SecDir="/scratch/dtn2an/workspace/refseq_aligned/snp_calling"
+refgen="/scratch/dtn2an/genomes/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
 
+##here we run haplotypecaller which finds variable sites between a sample and the reference genome. Haplotypecaller doesn't like input with multiple sample IDs, so we need to extract those and then run haplotypecaller on each (we will merge afterwards back to full lizard) 
 
-cd ${SecDir}/liver
+mkdir ${SecDir}/haplotypecaller_output/
 
-mkdir ${SecDir}/liver/haplotypecaller_output/
-
-module load gatk/4.1.6.0
-
-for i in *_prehaplotypecaller_sort.bam
-do
-  name=$(echo $i | awk -F "_prehaplotypecaller_" '{print $1}')
-  gatk --java-options "-Xmx25g" HaplotypeCaller \
-    -R ${refgen} \
-    -I $i \
-    -O ${SecDir}/liver/haplotypecaller_output/${name}_rd1.vcf \
-    --standard-min-confidence-threshold-for-calling 30 \
-    --min-base-quality-score 25 \
-    -ERC GVCF
-done
-
-cd ${SecDir}/brain
-
-mkdir ${SecDir}/brain/haplotypecaller_output/
-
-module load gatk/4.1.6.0
+module load gatk/4.2.3.0
 
 for i in *_prehaplotypecaller_sort.bam
 do
   name=$(echo $i | awk -F "_prehaplotypecaller_" '{print $1}')
-  gatk --java-options "-Xmx25g" HaplotypeCaller \
-    -R ${refgen} \
-    -I $i \
-    -O ${SecDir}/brain/haplotypecaller_output/${name}_rd1.vcf \
-    --standard-min-confidence-threshold-for-calling 30 \
-    --min-base-quality-score 25 \
-    -ERC GVCF
+  /scratch/dtn2an/tools/samtools-1.15.1/bin/samtools samples $i | column | awk -F '\t' '{for (i = 1; i <= NF; i++) {if ($i ~ /Scun/) print $i} }' > temp.txt
+  samples=$(cat temp.txt)
+  echo ${samples}
+  for sample in $samples
+  do
+     echo ${sample}
+     gatk --java-options "-Xmx25g" HaplotypeCaller \
+       -R ${refgen} \
+       -I $i \
+       -O ${SecDir}/haplotypecaller_output/${name}_rd1.vcf \
+       --standard-min-confidence-threshold-for-calling 30 \
+       --min-base-quality-score 25 \
+       -ERC GVCF
+   done
 done
 
-cd ${SecDir}/muscle
 
-mkdir ${SecDir}/muscle/haplotypecaller_output/
-
-module load gatk/4.1.6.0
+## now let's re-merge our samples from the same individual
 
 for i in *_prehaplotypecaller_sort.bam
 do
   name=$(echo $i | awk -F "_prehaplotypecaller_" '{print $1}')
-  gatk --java-options "-Xmx25g" HaplotypeCaller \
+  /scratch/dtn2an/tools/samtools-1.15.1/bin/samtools samples $i | column | awk -F '\t' '{for (i = 1; i <= NF; i++) {if ($i ~ /Scun/) print $i} }' > temp.txt
+  mapfile -t tempArray < temp.txt
+  if [ ${#tempArray[@]} == 2 ]
+  then
+    gatk CombineGVCFs \
     -R ${refgen} \
-    -I $i \
-    -O ${SecDir}/muscle/haplotypecaller_output/${name}_rd1.vcf \
-    --standard-min-confidence-threshold-for-calling 30 \
-    --min-base-quality-score 25 \
-    -ERC GVCF
+    --variant echo "${tempArray[0]}"_rd1.vcf \
+    --variant echo "${tempArray[1]}"_rd1.vcf \
+    -O $name_all_tissues.vcf
+   elif [ ${#tempArray[@]} == 3 ]
+   then
+    gatk CombineGVCFs \
+    -R ${refgen} \
+    --variant echo "${tempArray[0]}"_rd1.vcf \
+    --variant echo "${tempArray[1]}"_rd1.vcf \
+    --variant echo "${tempArray[2]}"_rd1.vcf \
+   else
+    :
+   fi
 done
-
+     
+      
+  
 
 ## From this point on, we will be doing everything by scaffold rather than by sample, since it is joint calling. We only need the first ~9000 scaffolds since nearly all important genes will be there
 ## We need to make an interval list with all of the scaffolds that are worth looking at
