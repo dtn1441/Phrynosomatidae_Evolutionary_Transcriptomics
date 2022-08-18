@@ -4,11 +4,11 @@
 ## example of file in this directory: "3906_P1R1_RefSeq/paired_sams/Scun_23_liver_S41_paired_RefSeq.sam"
 ## make sure to index and prepare dictionary of reference genome
 
-mkdir /scratch/dtn2an/refseq_aligned/preprocessing
+mkdir /scratch/dtn2an/workspace/refseq_aligned/preprocessing
 
-PrimDir="/scratch/dtn2an/refseq_aligned"
-SecDir="/scratch/dtn2an/refseq_aligned/preprocessing"
-refgen="/scratch/dtn2an/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
+PrimDir="/scratch/dtn2an/workspace/refseq_aligned"
+SecDir="/scratch/dtn2an/workspace/refseq_aligned/preprocessing"
+refgen="/scratch/dtn2an/genomes/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
 
 
 cd ${PrimDir}/3906_P1R1_RefSeq/paired_sams/
@@ -137,6 +137,8 @@ do
   name=$(echo $i | awk -F "_rdgrps.bam" '{print $1}')
   samtools merge -o ${SecDir}/merged/${name}_merged.bam $i ${PrimDir}/3906_P2R2_RefSeq/paired_sams/$i
 done
+
+## Here is where we can merge samples from the liver, muscle, and brain such that they all retain their sample IDs, but can be run together. For now, I manually used samtools merge to merge samples from the same individual. There is no doubt a smarter way to automate it.
 
 
 ## Next step is removing duplicates since the RNAseq dataset will have a lot of duplicates and downstream genotyping doesn't want the confusion of many slighly similar overlapping reads
