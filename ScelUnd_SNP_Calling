@@ -43,16 +43,17 @@ do
   then
     gatk CombineGVCFs \
     -R ${refgen} \
-    --variant echo "${tempArray[0]}"_rd1.vcf \
-    --variant echo "${tempArray[1]}"_rd1.vcf \
-    -O $name_all_tissues.vcf
+    --variant echo ./haplotypecaller_output/"${tempArray[0]}"_rd1.vcf \
+    --variant echo ./haplotypecaller_output/"${tempArray[1]}"_rd1.vcf \
+    -O ./haplotypecaller_output/${name}_all_tissues.vcf
    elif [ ${#tempArray[@]} == 3 ]
    then
     gatk CombineGVCFs \
     -R ${refgen} \
-    --variant echo "${tempArray[0]}"_rd1.vcf \
-    --variant echo "${tempArray[1]}"_rd1.vcf \
-    --variant echo "${tempArray[2]}"_rd1.vcf \
+    --variant echo ./haplotypecaller_output/"${tempArray[0]}"_rd1.vcf \
+    --variant echo ./haplotypecaller_output/"${tempArray[1]}"_rd1.vcf \
+    --variant echo ./haplotypecaller_output/"${tempArray[2]}"_rd1.vcf \
+    -O ./haplotypecaller_output/${name}_all_tissues.vcf
    else
     :
    fi
