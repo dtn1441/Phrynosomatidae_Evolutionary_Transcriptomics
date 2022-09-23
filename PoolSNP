@@ -1,0 +1,112 @@
+## Start this step after you finish the pre-processing of the bams found in the "SNP_PreProcessing" file
+
+## PoolSNP requires mpileup files, so we first need to convert bams to mpileups.
+
+############################################################################################
+############################################################################################
+
+
+nano bam2mpileup.slurm
+
+#!/bin/bash
+#
+#
+#SBATCH -J bam2mpileup
+#SBATCH --ntasks-per-node=1
+#SBATCH -N 1
+#SBATCH -t 0-50:00:00
+#SBATCH --mem 15G
+#SBATCH -o /scratch/dtn2an/workspace/refseq_aligned/stderr/bam2mpileup.out
+#SBATCH -e /scratch/dtn2an/workspace/refseq_aligned/stderr/bam2mpileup.err
+#SBATCH --account=coxlab
+#SBATCH --partition=standard
+
+module load samtools/1.12
+
+cd /scratch/dtn2an/workspace/refseq_aligned/merge_runs/tissue_merged/
+
+for i in *.bam
+do
+  name=$(echo $i | awk -F _ '{print $1}')
+  samtools mpileup -o ${name}.mpileup $i
+done
+
+
+############################################################################################
+############################################################################################
+
+
+## Now we run PoolSNP; however, we need to break up the chromosomes so that it will run more efficiently. After breaking them up by chromosome,
+## we will create an input file that has all of the sample names as well as the chromosome and then tell PoolSNP to run it by 
+## that naming system
+
+mkdir chrom
+
+for i in *.mpileup
+do
+  name=$(echo $i | awk -F . '{print $1}')
+  cat $i | sed -n "1p;/NC_056522.1/p" > /chrom/${name}_chrom1.mpileup
+  cat $i | sed -n "1p;/NC_056523.1/p" > /chrom/${name}_chrom2.mpileup
+  cat $i | sed -n "1p;/NC_056524.1/p" > /chrom/${name}_chrom3.mpileup
+  cat $i | sed -n "1p;/NC_056525.1/p" > /chrom/${name}_chrom4.mpileup
+  cat $i | sed -n "1p;/NC_056526.1/p" > /chrom/${name}_chrom5.mpileup
+  cat $i | sed -n "1p;/NC_056527.1/p" > /chrom/${name}_chrom6.mpileup
+  cat $i | sed -n "1p;/NC_056528.1/p" > /chrom/${name}_chrom7.mpileup
+  cat $i | sed -n "1p;/NC_056529.1/p" > /chrom/${name}_chrom8.mpileup
+  cat $i | sed -n "1p;/NC_056530.1/p" > /chrom/${name}_chrom9.mpileup
+  cat $i | sed -n "1p;/NC_056531.1/p" > /chrom/${name}_chromX.mpileup
+  cat $i | sed -n "1p;/NC_056532.1/p" > /chrom/${name}_chrom11.mpileup
+done
+
+cd chrom
+ls * > chrom_name_temp.txt
+
+cat chrom_name_temp.txt | awk -F . '{print $1}' > chrom_name.txt
+cat chrom_name_temp.txt | awk -F _ '{print $1}' > name.txt
+
+paste chrom_name.txt name.txt | column -s $'\t' -t > /scratch/dtn2an/workspace/refseq_aligned/input_files.txt
+
+
+
+nano PoolSNP.slurm
+
+#!/bin/bash
+#
+#
+#SBATCH -J PoolSNP
+#SBATCH --ntasks-per-node=1
+#SBATCH -N 1
+#SBATCH -t 0-15:00:00
+#SBATCH --mem 15G
+#SBATCH -o /scratch/dtn2an/workspace/refseq_aligned/stderr/PoolSNP_%A_%a.out
+#SBATCH -e /scratch/dtn2an/workspace/refseq_aligned/stderr/PoolSNP_%A_%a.err
+#SBATCH --account=coxlab
+#SBATCH --partition=standard
+#SBATCH --array=1-40
+
+module load parallel/20200322
+
+cd /scratch/dtn2an/workspace/refseq_aligned/merge_runs/tissue_merged/mpileups/finished/
+
+mkdir PoolSNP
+
+input_files=/scratch/dtn2an/workspace/refseq_aligned/input_files.txt
+
+name_chrom=$(cat ${input_files} | awk '{print $1}' | sed "${SLURM_ARRAY_TASK_ID}q;d")
+name_only=$(cat ${input_files} | awk '{print $2}' | sed "${SLURM_ARRAY_TASK_ID}q;d")
+
+echo $name_chrom
+echo $name_only
+
+bash /scratch/dtn2an/tools/PoolSNP/PoolSNP.sh \
+mpileup= ${name_chrom} \
+reference=/scratch/dtn2an/genomes/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna \
+names=${name_only} \
+max-cov=0.98 \
+min-cov=10 \
+min-count=10 \
+min-freq=0.01 \
+miss-frac=0.2 \
+badsites=1 \
+allsites=1 \
+output=/scratch/dtn2an/workspace/refseq_aligned/merge_runs/tissue_merged/mpileups/finished/PoolSNP/${name_chrom}_PoolSNP.vcf
