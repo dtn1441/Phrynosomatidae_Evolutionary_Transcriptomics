@@ -1,0 +1,144 @@
+mkdir /scratch/dtn2an/refseq_aligned/snp_processing/
+
+PrimDir="/scratch/dtn2an/refseq_aligned"
+SecDir="/scratch/dtn2an/refseq_aligned/snp_calling"
+ThirDir="/scratch/dtn2an/refseq_aligned/snp_processing"
+refgen="/scratch/dtn2an/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
+
+##Declare intervals for array
+interval_list="/scratch/dtn2an/refseq_genome/ncbi-genomes-2021-09-15/interval_list.txt"
+myint=$(cat ${interval_list} | sed "${SLURM_ARRAY_TASK_ID}q;d")
+
+mkdir ${ThirDir}/liver
+mkdir ${ThirDir}/brain
+mkdir ${ThirDir}/muscle
+
+##Separate snps and indels
+
+cd ${SecDir}/liver/Genotype_gVCFs/
+
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type SNP \
+  -O ${ThirDir}/liver/${myint}_liver_snps.vcf 
+  
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type INDEL \
+  -O ${ThirDir}/liver/${myint}_liver_indels.vcf 
+
+rm *_jc_rd1.vcf
+
+cd ${SecDir}/brain/Genotype_gVCFs/
+
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type SNP \
+  -O ${ThirDir}/brain/${myint}_brain_snps.vcf 
+  
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type INDEL \
+  -O ${ThirDir}/brain/${myint}_brain_indels.vcf 
+
+rm *_jc_rd1.vcf
+
+cd ${SecDir}/muscle/Genotype_gVCFs/
+
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type SNP \
+  -O ${ThirDir}/muscle/${myint}_muscle_snps.vcf 
+  
+gatk SelectVariants \
+  -V ${myint}_jc_rd1.vcf \
+  -select-type INDEL \
+  -O ${ThirDir}/muscle/${myint}_muscle_indels.vcf 
+
+rm *_jc_rd1.vcf
+
+## Filter variants based off recommended process for RNAseq data
+
+##Liver
+mkdir ${ThirDir}/liver/filtered_variants/
+cd ${ThirDir}/liver/filtered_variants/
+
+gatk VariantFiltration \
+  -R ${refgen} \
+  -V ../${myint}_liver_snps.vcf \
+  -O ${myint}_liver_snps_marked.vcf \
+  --filter-expression "DP > 10.0 && FS < 30.0 && QUAL > 30.0 && MQ > 30.0 && QD > 2.0" --filter-name "DP10.FS30.QUAL30.MQ30.QD2"
+  
+gatk SelectVariants \
+  -R ${refgen} \
+  -V ${myint}_liver_snps_marked.vcf \
+  --exclude-filtered true \
+  -O ${myint}_liver_snps_filtered.vcf
+  
+gatk VariantFiltration \
+  -R ${refgen} \
+  -V ../${myint}_liver_indels.vcf \
+  -O ${myint}_liver_indels_marked.vcf \
+  --filter-expression "FS < 200.0 && QUAL > 30.0 && ReadPosRankSum > -20.0 && QD > 2.0" --filter-name "FS200.QUAL30.RPRS-20.QD2"
+  
+gatk SelectVariants \
+  -R ${refgen} \
+  -V ${myint}_liver_indels_marked.vcf \
+  --exclude-filtered true \
+  -O ${myint}_liver_indels_filtered.vcf
+  
+##Brain
+mkdir ${ThirDir}/brain/filtered_variants/
+cd ${ThirDir}/brain/filtered_variants/
+
+gatk VariantFiltration \
+  -R ${refgen} \
+  -V ../${myint}_brain_snps.vcf \
+  -O ${myint}_brain_snps_marked.vcf \
+  --filter-expression "DP > 10.0 && FS < 30.0 && QUAL > 30.0 && MQ > 30.0 && QD > 2.0" --filter-name "DP10.FS30.QUAL30.MQ30.QD2"
+  
+ gatk SelectVariants \
+  -R ${refgen} \
+  -V ${myint}_brain_snps_marked.vcf \
+  --exclude-filtered true \
+  -O ${myint}_brain_snps_filtered.vcf
+  
+gatk VariantFiltration \
+  -R ${refgen} \
+  -V ../${myint}_brain_indels.vcf \
+  -O ${myint}_brain_indels_marked.vcf \
+  --filter-expression "FS < 200.0 && QUAL > 30.0 && ReadPosRankSum > -20.0 && QD > 2.0" --filter-name "FS200.QUAL30.RPRS-20.QD2"
+  
+gatk SelectVariants \
+  -R ${refgen} \
+  -V ${myint}_brain_indels_marked.vcf \
+  --exclude-filtered true \
+  -O ${myint}_brain_indels_filtered.vcf
+  
+##Muscle
+mkdir ${ThirDir}/muscle/filtered_variants/
+cd ${ThirDir}/muscle/filtered_variants/
+
+gatk VariantFiltration \
+  -R ${refgen} \
+  -V ../${myint}_muscle_snps.vcf \
+  -O ${myint}_muscle_snps_marked.vcf \
+  --filter-expression "DP > 10.0 && FS < 30.0 && QUAL > 30.0 && MQ > 30.0 && QD > 2.0" --filter-name "DP10.FS30.QUAL30.MQ30.QD2"
+  
+ gatk SelectVariants \
+  -R ${refgen} \
+  -V ${myint}_muscle_snps_marked.vcf \
+  --exclude-filtered true \
+  -O ${myint}_muscle_snps_filtered.vcf
+ 
+gatk VariantFiltration \
+  -R ${refgen} \
+  -V ../${myint}_muscle_indels.vcf \
+  -O ${myint)_muscle_indels_marked.vcf \
+  --filter-expression "FS < 200.0 && QUAL > 30.0 && ReadPosRankSum, > -20.0 && QD > 2.0" --filter-name "FS200.QUAL30.RPRS-20.QD2" 
+  
+gatk SelectVariants \
+  -R ${refgen} \
+  -V ${myint}_muscle_indels_marked.vcf \
+  --exclude-filtered true \
+  -O ${myint}_muscle_indels_filtered.vcf
