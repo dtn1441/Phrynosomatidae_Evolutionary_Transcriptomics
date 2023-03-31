@@ -137,7 +137,8 @@ mkdir ${species}_GenotypeGVCFs \
 gatk GenotypeGVCFs \
 	-R ${ref_genome} \
 	-V gendb://./${myint}_wd \
-	-O ${bam_directory}/${species}_GenotypeGVCFs/${myint}_jc.vcf
+	-O ${bam_directory}/${species}_GenotypeGVCFs/${myint}_jc.vcf \
+	-all-sites ##keep all sites so pixy can calculate nucleotide diversity more robustly
 
 rm -r ./${myint}_wd
 
