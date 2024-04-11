@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #
-#SBATCH -J sort_index
+#SBATCH -J initial_sortdex
 #SBATCH --ntasks-per-node=1
 #SBATCH -N 1
 #SBATCH -t 0-20:00:00
