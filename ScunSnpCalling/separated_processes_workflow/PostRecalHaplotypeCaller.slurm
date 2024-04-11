@@ -32,7 +32,7 @@ do
 	gatk --java-options "-Xmx50g" HaplotypeCaller \
 		-R ${ref_fasta} \
 		-I $i \
-		-O ${name}_postRecal.vcf \
+		-O ${name}.vcf \
 		--standard-min-confidence-threshold-for-calling 30 \
 		--min-base-quality-score 25 \
 		-ERC GVCF
