@@ -1,14 +1,14 @@
 #!/bin/bash
 #
 #
-#SBATCH -J Haplotypecaller_scun_cat
+#SBATCH -J PreRecalHaplotypecaller
 #SBATCH --ntasks-per-node=1
 #SBATCH -N 1
 #SBATCH --cpus-per-task 20
 #SBATCH -t 72:00:00
 #SBATCH --mem 50G
-#SBATCH -o /scratch/dtn2an/workspace/refseq_aligned/stderr/haplotypecaller_scun_cat_gr1.out
-#SBATCH -e /scratch/dtn2an/workspace/refseq_aligned/stderr/haplotypecaller_scun_cat_gr1.err
+#SBATCH -o /scratch/dtn2an/workspace/refseq_aligned/stderr/PreRecalHaplotypecaller.out
+#SBATCH -e /scratch/dtn2an/workspace/refseq_aligned/stderr/PreRecalHaplotypecaller.err
 #SBATCH --account=coxlab
 #SBATCH --partition=standard
 
@@ -18,12 +18,17 @@ pre_processing_dir=""
 
 cd ${pre_processing_dir}
 
-module load gatk/4.2.3.0
-refgen="/scratch/dtn2an/genomes/refseq_genome/ncbi-genomes-2021-09-15/GCF_019175285.1_SceUnd_v1.1_genomic.fna"
+## Modules may chance according to sys admin
 
-for i in *_prehaplotypecaller_RG.bam
+module load gcc/11.4.0 openmpi/4.1.4
+module load python/3.11.4
+module load gatk/4.2.3.0
+
+refgen=""
+
+for i in *_prehaplo_sort.bam
 do
-	name=$(echo $i | awk -F "_prehaplotypecaller" '{print $1}')
+	name=$(echo $i | awk -F "_prehaplo_sort" '{print $1}')
 	gatk --java-options "-Xmx50g" HaplotypeCaller \
 		-R ${refgen} \
 		-I $i \
